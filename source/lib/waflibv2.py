@@ -11,16 +11,24 @@
 #  and limitations under the License.                                                                                #
 ######################################################################################################################
 # import boto3
-# from botocore.config import Config
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from ipaddress import ip_address
 from backoff import on_exception, expo, full_jitter
 from lib.boto3_util import create_client
+import os
 
 API_CALL_NUM_RETRIES = 5
 MAX_TIME = 20
 
-client = create_client('wafv2')
+region_name = os.environ.get('REGION_NAME', 'us-east-1')
+config = Config(
+    region_name=region_name,
+    retries={'max_attempts': 5, 'mode': 'standard'}
+)
+
+client = create_client('wafv2', my_config=config)
+
 
 class WAFLIBv2(object):
 
@@ -33,34 +41,34 @@ class WAFLIBv2(object):
             return None
         tmp = arn.split('/')
         return tmp.pop()
-    
+
     # Determine network version for source_ip
     def which_ip_version(self, log, source_ip):
         if source_ip == None:
             return None
         try:
             source_ip = source_ip.strip()
-            ip_type = "IPV%s"%ip_address(source_ip).version
+            ip_type = "IPV%s" % ip_address(source_ip).version
             return ip_type
         except Exception as e:
             log.error("Source ip %s is not IPV4 or IPV6.", str(source_ip))
             log.error(str(e))
             return None
-    
+
     # Append correct cidr to source_ip
     def set_ip_cidr(self, log, source_ip):
         if source_ip == None:
             return None
         try:
             source_ip = source_ip.strip()
-            ip_type = "IPV%s"%ip_address(source_ip).version
+            ip_type = "IPV%s" % ip_address(source_ip).version
         except Exception as e:
             log.error("Source ip %s is not IPV4 or IPV6.", str(source_ip))
             log.error(str(e))
             return None
-        
+
         ip_class = "32" if ip_type == "IPV4" else "128"
-        return str(source_ip)+"/"+str(ip_class)
+        return str(source_ip) + "/" + str(ip_class)
 
     # Retrieve IPSet given an ip_set_id
     def get_ip_set_by_id(self, log, scope, name, ip_set_id):
@@ -78,7 +86,7 @@ class WAFLIBv2(object):
             log.error("[waflib:get_ip_set_by_id] Failed to get IPSet %s", str(ip_set_id))
             log.error(str(e))
             return None
-            
+
     # Retrieve IPSet given an ip set arn
     @on_exception(expo, client.exceptions.WAFInternalErrorException, max_time=MAX_TIME)
     def get_ip_set(self, log, scope, name, arn):
@@ -104,7 +112,7 @@ class WAFLIBv2(object):
             response = self.get_ip_set(log, scope, name, arn)
             log.info(response)
             ip_count = len(response['IPSet']['Addresses']) if response is not None else 0
-            log.info("%s IP address count: %s" %(name, str(ip_count)))
+            log.info("%s IP address count: %s" % (name, str(ip_count)))
             return ip_count
         except Exception as e:
             log.error("Failed to get the count of IP address for ARN %s", str(arn))
@@ -113,9 +121,9 @@ class WAFLIBv2(object):
 
     # Update addresses in an IPSet using ip set id
     @on_exception(expo, client.exceptions.WAFOptimisticLockException,
-              max_time=MAX_TIME,
-              jitter=full_jitter,
-              max_tries=API_CALL_NUM_RETRIES)
+                  max_time=MAX_TIME,
+                  jitter=full_jitter,
+                  max_tries=API_CALL_NUM_RETRIES)
     def update_ip_set_by_id(self, log, scope, name, ip_set_id, addresses, lock_token, description):
         log.debug("[waflib:update_ip_set_by_id] Start")
 
@@ -136,7 +144,8 @@ class WAFLIBv2(object):
         except ClientError as ex:
             exception_type = ex.response['Error']['Code']
             if exception_type in ['OptimisticLockException']:
-                log.info("[waflib:update_ip_set_by_id] OptimisticLockException detected. Get the latest ip set and retry updating ip set.")
+                log.info(
+                    "[waflib:update_ip_set_by_id] OptimisticLockException detected. Get the latest ip set and retry updating ip set.")
                 ip_set = self.get_ip_set_by_id(log, scope, name, ip_set_id)
                 lock_token = ip_set['LockToken']
 
@@ -155,12 +164,11 @@ class WAFLIBv2(object):
             log.error("[waflib:update_ip_set_by_id] Failed to update IPSet: %s", str(ip_set_id))
             return None
 
-            
     # Update addresses in an IPSet using ip set arn
     @on_exception(expo, client.exceptions.WAFOptimisticLockException,
-            max_time=MAX_TIME,
-            jitter=full_jitter,
-            max_tries=API_CALL_NUM_RETRIES)
+                  max_time=MAX_TIME,
+                  jitter=full_jitter,
+                  max_tries=API_CALL_NUM_RETRIES)
     def update_ip_set(self, log, scope, name, ip_set_arn, addresses):
         log.info("[waflib:update_ip_set] Start")
         if (ip_set_arn is None or name is None):
@@ -195,8 +203,7 @@ class WAFLIBv2(object):
             log.error(e)
             log.error("Failed to update IPSet: %s", str(ip_set_id))
             return None
-            
-    
+
     # Put Log Configuration for webacl
     @on_exception(expo, client.exceptions.WAFInternalErrorException, max_time=MAX_TIME)
     def put_logging_configuration(self, log, web_acl_arn, delivery_stream_arn):
@@ -246,7 +253,7 @@ class WAFLIBv2(object):
                   max_time=MAX_TIME)
     def delete_ip_set(self, log, scope, name, ip_set_id):
         try:
-            response = self.get_ip_set(log, scope, name, ip_set_id)          
+            response = self.get_ip_set(log, scope, name, ip_set_id)
             if response is not None:
                 lock_token = response['LockToken']
                 response = client.delete_ip_set(

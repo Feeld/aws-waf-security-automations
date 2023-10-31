@@ -16,11 +16,11 @@
 #    The template will then expect the source code to be located in the solutions-[region_name] bucket 
 # 
 # Check to see if input has been provided: 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then 
-    echo "Please provide the base template-bucket, source-bucket-base-name, trademark-approved-solution-name and version" 
-    echo "For example: ./build-s3-dist.sh solutions solutions-code trademarked-solution-name v3.0" 
-    exit 1 
-fi 
+#if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
+#    echo "Please provide the base template-bucket, source-bucket-base-name, trademark-approved-solution-name and version"
+#    echo "For example: ./build-s3-dist.sh solutions solutions-code trademarked-solution-name v3.0"
+#    exit 1
+#fi
 
 echo "template bucket = $1"
 echo "source bucket = $2"
