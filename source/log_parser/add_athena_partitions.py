@@ -86,7 +86,7 @@ def build_athena_query(log, database_name, table_name):
     hour = current_timestamp.hour
 
     query_string = "ALTER TABLE " \
-        + database_name + "." + table_name  \
+        + "\"" + database_name + "\".\"" + table_name + "\""  \
         + "\nADD IF NOT EXISTS\n"  \
         "PARTITION (\n"  \
             "\tyear = " + str(year) + ",\n"  \

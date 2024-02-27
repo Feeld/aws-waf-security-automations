@@ -180,7 +180,7 @@ def build_athena_query_part_one_for_cloudfront_logs(
                           "\t\t\tparse_datetime( concat( concat( format_datetime(date, 'yyyy-MM-dd'), '-' ), time ), 'yyyy-MM-dd-HH:mm:ss') AS datetime\n"  \
                         "\t\tFROM\n" \
                         + "\t\t\t" \
-                        + database_name + "." + table_name
+                        + "\"" + database_name + "\".\"" + table_name + "\""
     log.debug(
         "[build_athena_query_part_one_for_cloudfront_logs]  \
          Query string part One:\n %s"%query_string)
@@ -212,7 +212,7 @@ def build_athena_query_part_one_for_alb_logs(
                           "\t\t\tparse_datetime(time, 'yyyy-MM-dd''T''HH:mm:ss.SSSSSS''Z') AS datetime\n"  \
                         "\t\tFROM\n" \
                         + "\t\t\t" \
-                        + database_name + "." + table_name
+                        + "\"" + database_name + "\".\"" + table_name + "\""
     log.debug(
         "[build_athena_query_part_one_for_alb_logs]  \
          Query string part One:\n %s"%query_string)
@@ -287,7 +287,7 @@ def build_athena_query_part_one_for_waf_logs(
                           "\t\t\tfrom_unixtime(timestamp/1000) as datetime\n"  \
                         "\t\tFROM\n" \
                         + "\t\t\t" \
-                        + database_name + "." + table_name
+                        + "\"" + database_name + "\".\"" + table_name + "\""
     log.debug(
         "[build_athena_query_part_one_for_waf_logs]  \
          Query string part One:\n %s"%query_string)
